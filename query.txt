@@ -1,0 +1,6 @@
+SELECT d.logdown_period,d.downtime,j.id,j.kode_jarkom,j.ip_wan,jj.jenis_jarkom,r.ip_lan,r.nama_remote,p.nama_provider
+FROM tb_jarkom_downtime d
+LEFT JOIN tb_jarkom j ON d.id_jarkom = j.id
+LEFT JOIN tb_jenis_jarkom jj ON j.kode_jenis_jarkom = jj.kode_jenis_jarkom
+LEFT JOIN tb_remote r ON j.id_remote = r.id_remote
+LEFT JOIN tb_provider p ON j.kode_provider = p.kode_provider
