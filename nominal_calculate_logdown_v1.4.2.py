@@ -1,6 +1,7 @@
 # this script is use to calculate logdown data from recon database
 # from table tb_alarm_jarkom_copy with remedy ticket data 
 # only running this script for early week monthly
+# output: availability rekap bulanan
 
 import logging
 import mysql.connector
@@ -25,7 +26,7 @@ try:
                         filemode='a')
 
     # Running app
-    print("-- Calculate logdown downtime from database recon v1.4 --")                    
+    print("-- Calculate logdown downtime from database recon v1.4.2 --")                    
     print("Running app with log: " + log_file)
 
     # Creating an object
@@ -57,7 +58,7 @@ try:
     # print("dt end period", dt_end_period)
     # print("days:", dt_end_period - dt_start_period, "seconds:", days.total_seconds(), "av.:", av)
     # exit(0)
-    logger.info("Running script v1.4")
+    logger.info("Running script v1.4.2")
     print("Logdown period %s to %s" %(start_period, end_period))
     logger.info("Fetching data from tb_alarm_jarkom_copy periode %s to %s" %(start_period, end_period))
    
@@ -66,10 +67,12 @@ try:
     try:
         # get record alarm stop_at is not null
         sql_select = """
-            SELECT * FROM tb_alarm_jarkom_copy
-            WHERE id_alarm_type IN (0,1,11,12,13,14,15,16,38,99) 
-                AND ((offline_at >= %s AND offline_at < %s AND stop_at IS NOT NULL) 
-                    OR (stop_at >= %s AND stop_at < %s AND stop_at IS NOT NULL))
+            SELECT c.id,c.id_jarkom,c.kode_jarkom,c.id_remote,c.kode_provider,c.ip_address,c.id_alarm_type,c.start_at,c.offline_at,c.stop_at,j.kode_jenis_jarkom 
+            FROM tb_alarm_jarkom_copy c
+            LEFT JOIN tb_jarkom j ON j.id=c.id_jarkom
+            WHERE c.id_alarm_type IN (0,1,11,12,13,14,15,16,38,99)
+                AND ((c.offline_at >= %s AND c.offline_at < %s AND c.stop_at IS NOT NULL) 
+                OR (c.stop_at >= %s AND c.stop_at < %s AND c.stop_at IS NOT NULL))
             """
         record_select = (start_period, end_period, start_period, end_period)
         cursor = connection.cursor()
@@ -85,17 +88,17 @@ try:
         # row[2] : kode_jarkom
         # row[3] : id_remote
         # row[4] : kode_provider
-        # row[5] : id_alarm_type
-        # row[6] : start_at
-        # row[7] : offline_at
-        # row[8] : stop_at
-        # row[18] : ip_address
-        # row[24] : update_at
+        # row[5] : ip_address
+        # row[6] : id_alarm_type
+        # row[7] : start_at
+        # row[8] : offline_at
+        # row[9] : stop_at
+        # row[10] : kode_jenis_jarkom
         for row in records:
             # logger.debug("row[1]:%s, row[5]:%s, row[6]:%s, row[7]:%s, row[8]:%s" %(row[1],row[5],row[6],row[7],row[8]))
-            # print("start_at:%s,offline_at:%s, stop_at:%s" %(row[6],row[7],row[8]))
-            offline_at = row[7]
-            stop_at = row[8]
+            # print("start_at:%s,offline_at:%s, stop_at:%s" %(row[7],row[8],row[9]))
+            offline_at = row[8]
+            stop_at = row[9]
             if offline_at is None:
                 offline_at = dt_start_period
             if offline_at < dt_start_period:
@@ -109,7 +112,7 @@ try:
             if downtime > false_alarm:
                 sum_downtime = downtime + jarkom_time_offline.get(row[1], 0)
                 jarkom_time_offline[row[1]] = sum_downtime
-                jarkom_offline_list[row[1]] = (row[2],row[3],row[18],row[4])
+                jarkom_offline_list[row[1]] = (row[10],row[3],row[5],row[4])
         
         logger.debug("Query: " + cursor.statement)
         logger.debug("Total number of rows in table: %d" %(row_count))
@@ -117,8 +120,10 @@ try:
 
         # get record alarm stop_at is  null
         sql_select = """
-            SELECT * FROM tb_alarm_jarkom_isnull
-            WHERE stop_at IS NULL AND id_alarm_type IN (0,1,11,12,13,14,15,16,38,99)
+            SELECT c.id,c.id_jarkom,c.kode_jarkom,c.id_remote,c.kode_provider,c.ip_address,c.id_alarm_type,c.start_at,c.offline_at,c.stop_at,j.kode_jenis_jarkom 
+            FROM tb_alarm_jarkom_isnull c
+            LEFT JOIN tb_jarkom j ON j.id=c.id_jarkom
+            WHERE stop_at IS NULL AND c.id_alarm_type IN (0,1,11,12,13,14,15,16,38,99)
             """
         # record_select = (end_period, )
         cursor = connection.cursor()
@@ -141,7 +146,7 @@ try:
             # print("start_at:%s,offline_at: %s, stop_at:%s, diff:%s, downtime:%d" %(row[6],offline_at,stop_at,delta,downtime))
             if downtime > false_alarm:
                 jarkom_isnull_time_offline[row[1]] = downtime + jarkom_isnull_time_offline.get(row[1], 0)
-                jarkom_offline_isnull_list[row[1]] = (row[2],row[3],row[18],row[4])
+                jarkom_offline_isnull_list[row[1]] = (row[10],row[3],row[5],row[4])
 
         logger.debug("Query: " + cursor.statement)
         logger.debug("Total number of rows in table: %d" %(row_count))
