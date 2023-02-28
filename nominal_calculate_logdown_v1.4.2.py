@@ -74,6 +74,7 @@ try:
                 AND ((c.offline_at >= %s AND c.offline_at < %s AND c.stop_at IS NOT NULL) 
                 OR (c.stop_at >= %s AND c.stop_at < %s AND c.stop_at IS NOT NULL))
             """
+            # AND id_jarkom IN (7815,14102,17767,55509)
         record_select = (start_period, end_period, start_period, end_period)
         cursor = connection.cursor()
         cursor.execute(sql_select, record_select)
@@ -153,16 +154,28 @@ try:
         logger.debug("Total number of id_jarkom : %d without false alarm" %(len(jarkom_isnull_time_offline)))
         
         record_insert_list = []
+        days_second = days.total_seconds()
+        av = 100
         for key, value in jarkom_time_offline.items():
             record_field = jarkom_offline_list[key]
-            av = 100 - (value/days.total_seconds())
+            diff = days_second - value
+            if diff <= 0:    
+                av = 0 
+            else:
+                av = (diff/days_second) * 100
             av = round(av, 2)
+            # print("id_jarkom:%s,ip_address: %s, downtime:%d, days_second:%s, diff:%d, av:%f" %(key,record_field[3],value,days_second,diff,av))
             record_insert = (start_period,key,record_field[0],record_field[1],record_field[2],record_field[3],value,av)
             record_insert_list.append(record_insert)
         for key, value in jarkom_isnull_time_offline.items():
             record_field = jarkom_offline_isnull_list[key]
-            av = 100 - (value/days.total_seconds())
+            diff = days_second - value
+            if diff <= 0:    
+                av = 0 
+            else:
+                av = (diff/days_second) * 100
             av = round(av, 2)
+            # print("id_jarkom:%s,ip_address: %s, downtime:%d, days_second:%s, diff:%d, av:%f" %(key,record_field[3],value,days_second,diff,av))
             record_insert = (start_period,key,record_field[0],record_field[1],record_field[2],record_field[3],value,av)
             record_insert_list.append(record_insert)
 
