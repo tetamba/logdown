@@ -58,10 +58,13 @@ try:
     try:
         # get record alarm stop_at is not null
         sql_select = """
-            SELECT * FROM tb_alarm_jarkom_copy
-            WHERE id_alarm_type IN (0,1,11,12,13,14,15,16,38,99) 
-                AND ((offline_at >= %s AND offline_at < %s AND stop_at IS NOT NULL) 
-                    OR (stop_at >= %s AND stop_at < %s AND stop_at IS NOT NULL))
+            SELECT c.id,c.id_jarkom,c.kode_jarkom,c.id_remote,c.kode_provider,c.ip_address,c.id_alarm_type,c.start_at,c.offline_at,c.stop_at,j.kode_jenis_jarkom,r.ip_lan 
+            FROM tb_alarm_jarkom_copy c
+            LEFT JOIN tb_jarkom j ON j.id=c.id_jarkom
+            LEFT JOIN tb_remote r ON r.id_remote=c.id_remote
+            WHERE c.id_alarm_type IN (0,1,11,12,13,14,15,16,38,99)
+                AND ((c.offline_at >= %s AND c.offline_at < %s AND c.stop_at IS NOT NULL) 
+                OR (c.stop_at >= %s AND c.stop_at < %s AND c.stop_at IS NOT NULL))
             """
         record_select = (start_period, end_period, start_period, end_period)
         cursor = connection.cursor()
@@ -75,15 +78,17 @@ try:
         records = cursor.fetchall()
         row_count = cursor.rowcount
         for row in records:
-            # logger.debug("row[1]:%s, row[5]:%s, row[6]:%s, row[7]:%s, row[8]:%s" %(row[1],row[5],row[6],row[7],row[8]))
-            # print("start_at:%s,offline_at:%s, stop_at:%s" %(row[6],row[7],row[8]))
             id_jarkom = row[1]
             kode_jarkom = row[2]
             id_remote = row[3]
             kode_provider = row[4]
-            ip_address = row[18]
-            offline_at = row[7]
-            stop_at = row[8]
+            ip_address = row[5]
+            offline_at = row[8]
+            stop_at = row[9]
+            kode_jenis_jarkom = row[10]
+            ip_lan = row[11]
+            # print("id_jarkom: %s,id_remote: %s,start_at: %s, offline_at: %s, stop_at:%s" %(id_jarkom,id_remote,row[7],offline_at,stop_at))
+
             # filter NULL and cut off date range
             if offline_at is None:
                 offline_at = dt_start_period
@@ -105,9 +110,17 @@ try:
                 jarkom_daily_list.append((id_jarkom, dates[i], dates[i+1]))
                 # print(id_jarkom,dates[i],dates[i+1])
                 # print(jarkom_daily)
+        
+        logger.debug("Query: " + cursor.statement)
+        logger.debug("Total number of rows in table: %d" %(row_count))
+        logger.debug("Total number of rows split daily : %d" %(len(jarkom_daily_list)))
+
+        # write to csv
         df = pd.DataFrame(jarkom_daily_list, columns =['id_jarkom', 'start', 'end'])
         # print(df)
-        # df.to_csv("jarkom_daily_list.csv", sep=',', encoding='utf-8')
+        csv = "jarkom_daily_list_" + str(today) + ".csv"
+        df.to_csv(csv, sep=',', encoding='utf-8')
+        logger.debug("Data written to file: %s successfully" %(csv))
 
     except mysql.connector.errors.Error as e:
         logger.error("Query failed", e)
