@@ -17,7 +17,7 @@ try:
     
     # Get today 
     today = datetime.date.today()
-    today = today.replace(month=2) # remove this 
+    # today = today.replace(month=2) # remove this 
     first = today.replace(day=1)
     false_alarm = 300
     last_month = first - datetime.timedelta(days=1)
@@ -25,13 +25,13 @@ try:
 
     # Create and configure logger
     str_today = datetime.datetime.now().strftime("%Y-%m-%d")
-    log_file = "nominal_calculate_logdown_v1.4.3_" + str_today + ".log"
+    log_file = "nominal_calculate_logdown_v1.4.3.1_" + str_today + ".log"
     logging.basicConfig(filename=log_file,
                         format='%(asctime)s %(message)s',
                         filemode='a')
 
     # Running app
-    print("-- Calculate logdown downtime from database recon v1.4.3 --")                    
+    print("-- Calculate logdown downtime from database recon v1.4.3.1 --")                    
     print("Running app with log: " + log_file)
 
     # Creating an object
@@ -47,7 +47,7 @@ try:
     #                                      user='nominalf2',
     #                                      password='P@ssw0rdN0m1n4l')
     connection = mysql.connector.connect(host='localhost',
-                                         database='dbrecon_20220217',
+                                         database='recon_20230314',
                                          user='root',
                                          password='')
     start_period = first_month
@@ -157,7 +157,8 @@ try:
         datelist = pd.date_range(start,end).strftime("%Y-%m-%d").tolist()
         df2 = pd.DataFrame(jarkom_list)
         df2["period"] = [datelist] * len(df2)
-        df2 = df2.explode("period", ignore_index=True)
+        # df2 = df2.explode("period", ignore_index=True)
+        df2 = df2.explode("period")
         rows, columns = df2.shape
         df2.columns = ['id_jarkom','period']
         # print(df2) 
