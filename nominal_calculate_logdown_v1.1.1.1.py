@@ -50,7 +50,11 @@ logger.info("Fetching data from tb_alarm_jarkom_copy periode %s to %s" %(start_p
 time_start = time.time()
 
 for i in range(1, 12):
-    end_period = start_period.replace(month=i+1)
+    if i < 12:
+        end_period = start_period.replace(month=i+1)
+    else:
+        end_period = datetime.datetime(2023, 1, 1).date()
+    
     dt_start_period = datetime.datetime.combine(start_period, datetime.time(0, 0))
     dt_end_period = datetime.datetime.combine(end_period, datetime.time(0, 0))
     days = dt_end_period - dt_start_period

@@ -54,8 +54,12 @@ logger.info("Fetching data from tb_alarm_jarkom periode %s to %s" %(start_period
 time_start = time.time()
 row_counts = 0
 
+
 for i in range(1, 12):
-    end_period = start_period.replace(month=i+1)
+    if i < 12:
+        end_period = start_period.replace(month=i+1)
+    else:
+        end_period = datetime.datetime(2023, 1, 1).date()
     # print(start_period, end_period)
     
     sql_select = """
